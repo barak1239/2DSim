@@ -1,4 +1,4 @@
-
+#for pull request reasons
 class Grid:
     def __init__(self):
         self.grid = [[0 for _ in range(30)] for _ in range(30)]
