@@ -55,7 +55,7 @@ class Grid:
             self.grid = nextgrid
             self.printstate()
             print("-----------------------------------------------------------------------------------------------------------------------------")
-#couldve fixed this runstate for animation but wanted to show my own idea first before using gpt for animation
+#couldve fixed this runstate for animation but wanted to show my own idea first before using gpt idea for fixing code for animation
     def nextstate(self): #like run states but better for animation as it does frame by frame and not outputting all at once
         neighbours = [
             (-1, 0), (1, 0),
