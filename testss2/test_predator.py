@@ -5,7 +5,7 @@ If necessary, change the import below to match your filename.
 """
 
 import random as rnd
-from sprint2.entity import Grid, Pred, Herb, Plant
+from entities.entity import Grid, Pred, Herb, Plant
 
 
 def count_type(world, entity_type):
@@ -22,7 +22,7 @@ def test_hunting_and_refueling():
     path = predator.look(3, world)
     assert path == [(2, 3)], f"Unexpected shortest path: {path}"
 
-    predator.update(world, 3, 5,T_HERBIVORE=3)
+    predator.update(world, 3, 5, T_HERBIVORE=3)
     assert (predator.x, predator.y) == (2, 3), "Predator didn't reach the herbivore"
     assert world.grid[2][3] is predator, "Predator is missing from its new cell"
     assert world.grid[2][2] is None, "Predator's old cell wasn't cleared"

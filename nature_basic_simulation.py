@@ -1,24 +1,44 @@
+from typing import List
+
 import yaml
 import random
-from plant import Plant
-from mobileentity import Pred as Pred, Herb as Herb
+import entities
+import grid
+from entities.plant import Plant
+from entities.mobileentity import Pred as Pred, Herb as Herb
 from grid import Grid as Grid
-from sprint2.block import Rock as Rock, Tree as Tree
+from entities.block import Rock as Rock, Tree as Tree
 
-def print_world(world, turn): #Chatgpt func fully
+
+def print_world(world, turn) -> None:  # Chatgpt func fully
+    """
+    just print the world
+    Args:
+        world: grid
+        turn: int
+
+    Returns:
+
+    """
     symbols = {Plant: "P", Herb: "H", Pred: "D", Rock: "R", Tree: "T"}
     print(f"\nTurn {turn} (P=plant, H=herbivore, D=predator, R=rock, T=tree):")
     for row in world.grid:
         print(" ".join(symbols.get(type(cell), ".") for cell in row))
 
 
-def living_entities(world):
+def living_entities(world) -> list:
     return [cell for row in world.grid for cell in row if cell is not None]
 
 
-def run():
+def run() -> None:
+    """
+    no params no return, runs the simulation itself. takes data from the yam itself then runs from 0,0 till width,height
+    checks logic raises if something goes wrong.
+    Returns:
+    Nothing
+    """
     random.seed(42)
-    with open("./config.yaml", 'r') as file:
+    with open("config.yaml", "r") as file:
         config = yaml.safe_load(file)
     gridconf = config["grid"]
     world = Grid(gridconf["width"], gridconf["height"])
@@ -52,14 +72,14 @@ def run():
     print_world(world, 0)
     print("Starting entities:", len(living_entities(world)))
     for turn in range(1, TURNS + 1):
-        #newborns wont act until the next turn.
+        # newborns wont act until the next turn.
         for entity in living_entities(world):
             if world.grid[entity.x][entity.y] is not entity:
                 continue
             if isinstance(entity, Herb):
-                entity.update(world, R_HERBIVORE_SIGHT, T_COOLDOWN,T_HERBIVORE)
+                entity.update(world, R_HERBIVORE_SIGHT, T_COOLDOWN, T_HERBIVORE)
             elif isinstance(entity, Pred):
-                entity.update(world, R_PREDATOR_SIGHT, T_COOLDOWN,T_HERBIVORE)
+                entity.update(world, R_PREDATOR_SIGHT, T_COOLDOWN, T_HERBIVORE)
             elif isinstance(entity, Plant):
                 entity.update(world)
             # rocks trees are still objects

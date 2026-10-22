@@ -5,7 +5,7 @@ Change the import below if that file has a different name.
 """
 
 import random
-from sprint2.entity import Grid, Plant, Herb
+from entities.entity import Grid, Plant, Herb
 
 
 def plants_in(world):
@@ -57,9 +57,11 @@ def test_eaten():
     plant = Plant(4, 2, 2)
     world.addentity(herbivore)
     world.addentity(plant)
-    herbivore.update(world, 2, 5,T_HERBIVORE=3)
+    herbivore.update(world, 2, 5, T_HERBIVORE=3)
     assert world.grid[2][2] is herbivore, "Herbivore did not reach plant"
-    assert all(cell is not plant for row in world.grid for cell in row), "Plant still on grid"
+    assert all(cell is not plant for row in world.grid for cell in row), (
+        "Plant still on grid"
+    )
     assert herbivore.steps == 9, f"Expected 6 + 4 - 1 = 9 steps, got {herbivore.steps}"
     print("Plant consumed: PASS (plant removed; herbivore steps = 9)")
 

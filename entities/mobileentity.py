@@ -1,16 +1,46 @@
 import random as rnd
 import collections
-from entity import Entity
-from sprint2.block import Tree as Tree, Rock as Rock
-from plant import Plant as Plant
+
+from matplotlib import path
+
+from .entity import Entity
+from .block import Tree, Rock
+from .plant import Plant
+
+
 class MobileEntity(Entity):
     def __init__(self, steps, x, y):
+        """
+        Args:
+            steps: number of steps until entity dies
+            x:
+            y:
+        """
         super().__init__(x, y)
         self.steps = steps
-    def look(self,range, grid):
-        directions = [(-1, 0), (1, 0), (0, -1), (0, 1), (-1, -1), (-1, 1), (1, -1), (1, 1)]
+
+    def look(self, range: int, grid) -> list:
+        """
+        look in range for food to eat
+        Args:
+            range: int for max range an animal can look at
+            grid:
+
+        Returns:
+        path
+        """
+        directions = [
+            (-1, 0),
+            (1, 0),
+            (0, -1),
+            (0, 1),
+            (-1, -1),
+            (-1, 1),
+            (1, -1),
+            (1, 1),
+        ]
         queue = collections.deque([(self.x, self.y, 0)])
-        '''help of https://stackoverflow.com/questions/6124402/python-bfs-with-collections'''
+        """help of https://stackoverflow.com/questions/6124402/python-bfs-with-collections"""
         visited = {(self.x, self.y)}  # same as set()
         parent = {(self.x, self.y): None}
         while queue:
@@ -33,11 +63,11 @@ class MobileEntity(Entity):
                     continue
                 cell = grid.grid[newx][newy]
                 if cell is not None and not isinstance(cell, self.foodtype):
-                    if not(
-                            (isinstance(self, Herb) and isinstance(cell, Herb))\
-                            or (isinstance(self, Pred) and isinstance(cell, Plant))
+                    if not (
+                        (isinstance(self, Herb) and isinstance(cell, Herb))
+                        or (isinstance(self, Pred) and isinstance(cell, Plant))
                     ):
-                        '''if not 2 herbs reproduction or pred destroys plant'''
+                        """if not 2 herbs reproduction or pred destroys plant"""
                         continue
                 if (newx, newy) in visited:
                     continue
@@ -51,27 +81,48 @@ class MobileEntity(Entity):
             newy = self.y + dy
             if 0 <= newx < grid.height and 0 <= newy < grid.width:
                 cell = grid.grid[newx][newy]
-                if (cell is None
+                if (
+                    cell is None
                     or (isinstance(self, Herb) and isinstance(cell, Herb))
-                    or (isinstance(self, Pred) and isinstance(cell, Plant))):
-                        return [(newx, newy)]
-        return
+                    or (isinstance(self, Pred) and isinstance(cell, Plant))
+                ):
+                    return [(newx, newy)]
+        return None
 
-    def move(self, path, grid, T_cooldown,T_HERBIVORE):
+    def move(self, path, grid, T_cooldown, T_HERBIVORE) -> None:
+        """
+        the actual movement of the animal
+        Args:
+            path:
+            grid:
+            T_cooldown: const in yaml
+            T_HERBIVORE: const in yaml
+
+        Returns:
+        None
+        """
         if not path:
             return
         newx, newy = path[0]
         food = grid.grid[newx][newy]
         if isinstance(self, Herb) and isinstance(food, Herb):
-#reproduction
+            # reproduction
             if self.cooldown == 0 and food.cooldown == 0:
-                if self.reproduce(grid,T_HERBIVORE):
+                if self.reproduce(grid, T_HERBIVORE):
                     self.cooldown = T_cooldown
                     food.cooldown = T_cooldown
                     return
             # no reproduction isn't possible= try another direction
-            directions = [(-1, 0), (1, 0), (0, -1), (0, 1),
-                          (-1, -1), (-1, 1), (1, -1), (1, 1)]
+            directions = [
+                (-1, 0),
+                (1, 0),
+                (0, -1),
+                (0, 1),
+                (-1, -1),
+                (-1, 1),
+                (1, -1),
+                (1, 1),
+            ]
             rnd.shuffle(directions)
             for dx, dy in directions:
                 newx = self.x + dx
@@ -90,23 +141,55 @@ class MobileEntity(Entity):
         self.x, self.y = newx, newy
         grid.addentity(self)
 
-    def update(self, grid, range, T_cooldown, T_HERBIVORE):
+    def update(self, grid, range, T_cooldown, T_HERBIVORE) -> None:
+        """
+        handles removing and adjusting entity lives (steps)
+        Args:
+            grid:
+            range:
+            T_cooldown:
+            T_HERBIVORE:
+
+        Returns:
+        none
+        """
         path = self.look(range, grid)
         self.move(path, grid, T_cooldown, T_HERBIVORE)
         self.steps -= 1
         if self.steps <= 0:
             grid.remove(self)
+
+
 class Herb(MobileEntity):
     foodtype = Plant
-    def __init__(self,steps,x,y):
-        super().__init__(steps, x,y)
+
+    def __init__(self, steps, x, y):
+        super().__init__(steps, x, y)
         self.cooldown = 0
-    def reproduce(self,grid,T_HERBIVORE):
+
+    def reproduce(self, grid, T_HERBIVORE) -> bool:
+        """
+        reproduce the herb, check directions
+        Args:
+            grid:
+            T_HERBIVORE:
+
+        Returns:
+        boolean that indicates if the herb is reproduced
+        """
         if self.cooldown > 0:
             return
 
-        directions = [(-1, 0), (1, 0), (0, -1), (0, 1),
-                      (-1, -1), (-1, 1), (1, -1), (1, 1)]
+        directions = [
+            (-1, 0),
+            (1, 0),
+            (0, -1),
+            (0, 1),
+            (-1, -1),
+            (-1, 1),
+            (1, -1),
+            (1, 1),
+        ]
 
         rnd.shuffle(directions)
 
@@ -116,16 +199,30 @@ class Herb(MobileEntity):
 
             if 0 <= newx < grid.height and 0 <= newy < grid.width:
                 if grid.grid[newx][newy] is None:
-                    baby = Herb( T_HERBIVORE,newx, newy)
+                    baby = Herb(T_HERBIVORE, newx, newy)
                     grid.addentity(baby)
-                    return True #not my idea to return true/false here
+                    return True  # not my idea to return true/false here
         return False
 
-    def update(self, grid, range, T_cooldown, T_HERBIVORE):
+    def update(self, grid, range, T_cooldown, T_HERBIVORE) -> None:
+        """
+        handles removing and adjusting entity lives (steps), inherits the method from MobileEntity
+        Args:
+            grid:
+            range:
+            T_cooldown:
+            T_HERBIVORE:
+
+        Returns:
+
+        """
         if self.cooldown > 0:
             self.cooldown -= 1
         super().update(grid, range, T_cooldown, T_HERBIVORE)
+
+
 class Pred(MobileEntity):
     foodtype = Herb
-    def __init__(self,steps,x,y):
-        super().__init__(steps, x,y)
+
+    def __init__(self, steps, x, y):
+        super().__init__(steps, x, y)

@@ -7,12 +7,13 @@ These tests are independent of YAML and the 590-entity simulation.
 Tests marked EXPECTED BEHAVIOR express ecosystem requirements. If one fails,
 it identifies a behavior to inspect, not necessarily a syntax error.
 """
+
 import unittest
 
-from sprint2.mobileentity import Herb, Pred
-from sprint2.grid import Grid
-from sprint2.plant import Plant
-from sprint2.block import Rock, Tree
+from entities.mobileentity import Herb, Pred
+from grid import Grid
+from entities.plant import Plant
+from entities.block import Rock, Tree
 
 SIGHT = 4
 COOLDOWN = 5
@@ -133,7 +134,7 @@ class TestHerbivoreReproduction(unittest.TestCase):
         baby = babies[0]
         self.assertEqual(baby.steps, BABY_LIFESPAN)
         self.assertEqual(baby.cooldown, 0)
-        self.assertLessEqual(max(abs(baby.x-parent.x), abs(baby.y-parent.y)), 1)
+        self.assertLessEqual(max(abs(baby.x - parent.x), abs(baby.y - parent.y)), 1)
         self.assertTrue(is_present(world, parent))
 
     def test_13_cooldown_blocks_direct_reproduction(self):
@@ -227,5 +228,5 @@ class TestHerbivorePredatorInteractions(unittest.TestCase):
         self.assertEqual(len(occupants(world, Herb)), 0)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main(verbosity=2)

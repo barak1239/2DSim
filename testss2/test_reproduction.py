@@ -1,14 +1,20 @@
 """Small reproduction test for the ecosystem classes; no YAML needed. test created by chatgpt"""
+
 import random as rnd
 
 # Change this import if your classes are saved in another Python file.
-from sprint2.entity import Grid, Herb, Plant
+from entities.entity import Grid, Herb, Plant
 
 
 def print_world(world):
     symbols = {Herb: "H", Plant: "P"}
     for row in world.grid:
-        print(" ".join(symbols.get(type(cell), ".") if cell is not None else "." for cell in row))
+        print(
+            " ".join(
+                symbols.get(type(cell), ".") if cell is not None else "."
+                for cell in row
+            )
+        )
     print()
 
 
@@ -33,7 +39,7 @@ def main():
 
     # BFS should attempt to enter (3, 2), which contains the other herbivore.
     # Reproduction should create a baby instead of moving into that cell.
-    moving_herb.update(world, 3, 5,T_HERBIVORE=3)
+    moving_herb.update(world, 3, 5, T_HERBIVORE=3)
 
     print("After one turn:")
     print_world(world)

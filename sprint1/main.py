@@ -1,9 +1,12 @@
 import matplotlib
+
 matplotlib.use("TkAgg")
 
 from sprint1 import gol_basic_simulation as gl
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
+
+
 def main():
     grid = gl.Grid()
     grid.loadstate(4)
@@ -17,15 +20,10 @@ def main():
         ax.set_title(f"Generation {frame + 1}")
         return (image,)
 
-    ani = FuncAnimation(
-        fig,
-        update,
-        frames=200,
-        interval=200,
-        repeat=False
-    )
+    ani = FuncAnimation(fig, update, frames=200, interval=200, repeat=False)
 
     plt.show()
+
 
 if __name__ == "__main__":
     main()
