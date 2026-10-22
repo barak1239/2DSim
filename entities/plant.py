@@ -25,11 +25,11 @@ class Plant(Entity):
                 if grid.grid[newx][newy] is None:
                     spawned = True
                     newsteps = self.steps
-                    newPlant = Plant(newsteps, newx, newy)
+                    newPlant = type(self)(newsteps, newx, newy)
                     grid.addentity(newPlant)
                 i += 1
 
-    def update(self, grid):
+    def update(self, grid,parameters)->None:
         self.steps -= 1
         if self.steps <= 0:
             grid.remove(self)

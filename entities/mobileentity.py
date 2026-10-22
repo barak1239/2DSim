@@ -1,15 +1,16 @@
 import random as rnd
 import collections
-
+import consts
 from matplotlib import path
-
 from .entity import Entity
-from .block import Tree, Rock
+from .block import Block
 from .plant import Plant
 
 
 class MobileEntity(Entity):
-    def __init__(self, steps, x, y):
+    foodtypes=()
+    passthrough = ()
+    def __init__(self, steps, x, y, reproduce):
         """
         Args:
             steps: number of steps until entity dies
@@ -18,7 +19,57 @@ class MobileEntity(Entity):
         """
         super().__init__(x, y)
         self.steps = steps
+        self.canreproduce = reproduce
+    def check2reproduce(self, other)->bool:
+        """
+        will check if they are same of the same entity and make sure nothing wrong can pass and crush the func
+        Args:
+            other: other entity
 
+        Returns: bool
+
+        """
+        if(not (isinstance(other, MobileEntity))):
+            return False
+        return (type(self) == type(other) and self.canreproduce and other.canreproduce)
+    def readytoreproduce(self)->bool:
+        """
+        we check if you are even able to reproduce the animal if so check what the cooldown is
+        Returns: bool
+
+        """
+
+        return self.canreproduce and self.cooldown == 0
+
+    def reproduce(self, grid, newbornsteps) -> bool:
+        """
+        new entity of the same type in an empty
+        neighboring cell.
+
+        Args:
+            grid: grid.
+            newbornsteps: the starting lifetime from yaml.
+
+        Returns:
+            bool of if baby created
+        """
+        if not self.readytoreproduce():
+            return False
+
+        directions = consts.DIRECTIONS.copy()
+        rnd.shuffle(directions)
+
+        for dx, dy in directions:
+            newx = self.x + dx
+            newy = self.y + dy
+
+            if 0 <= newx < grid.height and 0 <= newy < grid.width:
+                if grid.grid[newx][newy] is None:
+                    baby = type(self)(newbornsteps, newx, newy)
+                    grid.addentity(baby)
+                    return True
+
+        return False
     def look(self, range: int, grid) -> list:
         """
         look in range for food to eat
@@ -29,23 +80,14 @@ class MobileEntity(Entity):
         Returns:
         path
         """
-        directions = [
-            (-1, 0),
-            (1, 0),
-            (0, -1),
-            (0, 1),
-            (-1, -1),
-            (-1, 1),
-            (1, -1),
-            (1, 1),
-        ]
+        directions = consts.DIRECTIONS.copy()
         queue = collections.deque([(self.x, self.y, 0)])
         """help of https://stackoverflow.com/questions/6124402/python-bfs-with-collections"""
         visited = {(self.x, self.y)}  # same as set()
         parent = {(self.x, self.y): None}
         while queue:
             x, y, dist = queue.popleft()
-            if isinstance(grid.grid[x][y], self.foodtype):
+            if isinstance(grid.grid[x][y], self.foodtypes):
                 path = []
                 while (x, y) != (self.x, self.y):
                     path.append((x, y))
@@ -59,13 +101,13 @@ class MobileEntity(Entity):
                 newy = y + dy
                 if newx < 0 or newx >= grid.height or newy < 0 or newy >= grid.width:
                     continue
-                if isinstance(grid.grid[newx][newy], (Rock, Tree)):
+                if isinstance(grid.grid[newx][newy], (Block)):
                     continue
                 cell = grid.grid[newx][newy]
-                if cell is not None and not isinstance(cell, self.foodtype):
+                if cell is not None and not isinstance(cell, self.foodtypes):
                     if not (
-                        (isinstance(self, Herb) and isinstance(cell, Herb))
-                        or (isinstance(self, Pred) and isinstance(cell, Plant))
+                        self.check2reproduce(cell)
+                        or isinstance(cell, self.passthrough)
                     ):
                         """if not 2 herbs reproduction or pred destroys plant"""
                         continue
@@ -83,46 +125,35 @@ class MobileEntity(Entity):
                 cell = grid.grid[newx][newy]
                 if (
                     cell is None
-                    or (isinstance(self, Herb) and isinstance(cell, Herb))
-                    or (isinstance(self, Pred) and isinstance(cell, Plant))
-                ):
+                    or self.check2reproduce(cell)
+                    or isinstance(cell, self.passthrough)):
                     return [(newx, newy)]
         return None
 
-    def move(self, path, grid, T_cooldown, T_HERBIVORE) -> None:
+    def move(self, path, grid, T_cooldown, newbornsteps) -> None:
         """
         the actual movement of the animal
         Args:
             path:
             grid:
             T_cooldown: const in yaml
-            T_HERBIVORE: const in yaml
+            newbornsteps: const in yaml
 
-        Returns:
-        None
+        Returns: None
         """
         if not path:
             return
         newx, newy = path[0]
-        food = grid.grid[newx][newy]
-        if isinstance(self, Herb) and isinstance(food, Herb):
+        other = grid.grid[newx][newy]
+        if self.check2reproduce(other):
             # reproduction
-            if self.cooldown == 0 and food.cooldown == 0:
-                if self.reproduce(grid, T_HERBIVORE):
+            if self.readytoreproduce() and other.readytoreproduce():
+                if self.reproduce(grid, newbornsteps):
                     self.cooldown = T_cooldown
-                    food.cooldown = T_cooldown
+                    other.cooldown = T_cooldown
                     return
             # no reproduction isn't possible= try another direction
-            directions = [
-                (-1, 0),
-                (1, 0),
-                (0, -1),
-                (0, 1),
-                (-1, -1),
-                (-1, 1),
-                (1, -1),
-                (1, 1),
-            ]
+            directions = consts.DIRECTIONS.copy()
             rnd.shuffle(directions)
             for dx, dy in directions:
                 newx = self.x + dx
@@ -135,94 +166,63 @@ class MobileEntity(Entity):
                         return
             return  # no empty cell found
         # normal movement and eating
-        if isinstance(food, self.foodtype):
-            self.steps += food.steps
+        if isinstance(other, self.foodtypes):
+            self.steps += other.steps
         grid.remove(self)
         self.x, self.y = newx, newy
         grid.addentity(self)
 
-    def update(self, grid, range, T_cooldown, T_HERBIVORE) -> None:
+    def update(self, grid, parameters) -> None:
         """
         handles removing and adjusting entity lives (steps)
         Args:
             grid:
             range:
             T_cooldown:
-            T_HERBIVORE:
+            newbornsteps:
 
-        Returns:
-        none
+        Returns: none
         """
-        path = self.look(range, grid)
-        self.move(path, grid, T_cooldown, T_HERBIVORE)
+        sight = parameters[self.sightkey]
+        newbornsteps = parameters[self.lifetimekey]
+        cooldown = parameters["T_COOLDOWN"]
+
+        path = self.look(sight, grid)
+        self.move(path, grid, cooldown, newbornsteps)
+
         self.steps -= 1
         if self.steps <= 0:
             grid.remove(self)
 
 
 class Herb(MobileEntity):
-    foodtype = Plant
-
+    foodtypes = (Plant,)
+    passthrough = ()
+    sightkey = "R_HERBIVORE_SIGHT"
+    lifetimekey = "T_HERBIVORE"
     def __init__(self, steps, x, y):
-        super().__init__(steps, x, y)
+        super().__init__(steps, x, y,reproduce=True)
         self.cooldown = 0
 
-    def reproduce(self, grid, T_HERBIVORE) -> bool:
+    def update(self, grid, parameters) -> None:
         """
-        reproduce the herb, check directions
+        handles removing and adjusting entity lives (steps)
         Args:
             grid:
-            T_HERBIVORE:
+            parameters:
 
-        Returns:
-        boolean that indicates if the herb is reproduced
-        """
-        if self.cooldown > 0:
-            return
-
-        directions = [
-            (-1, 0),
-            (1, 0),
-            (0, -1),
-            (0, 1),
-            (-1, -1),
-            (-1, 1),
-            (1, -1),
-            (1, 1),
-        ]
-
-        rnd.shuffle(directions)
-
-        for dx, dy in directions:
-            newx = self.x + dx
-            newy = self.y + dy
-
-            if 0 <= newx < grid.height and 0 <= newy < grid.width:
-                if grid.grid[newx][newy] is None:
-                    baby = Herb(T_HERBIVORE, newx, newy)
-                    grid.addentity(baby)
-                    return True  # not my idea to return true/false here
-        return False
-
-    def update(self, grid, range, T_cooldown, T_HERBIVORE) -> None:
-        """
-        handles removing and adjusting entity lives (steps), inherits the method from MobileEntity
-        Args:
-            grid:
-            range:
-            T_cooldown:
-            T_HERBIVORE:
-
-        Returns:
+        Returns: none
 
         """
         if self.cooldown > 0:
             self.cooldown -= 1
-        super().update(grid, range, T_cooldown, T_HERBIVORE)
 
+        super().update(grid, parameters)
 
 class Pred(MobileEntity):
-    foodtype = Herb
-
+    foodtypes = (Herb,)
+    passthrough = (Plant,)
+    sightkey = "R_PREDATOR_SIGHT"
+    lifetimekey = "T_PREDATOR"
     def __init__(self, steps, x, y):
-        super().__init__(steps, x, y)
+        super().__init__(steps, x, y,reproduce=False)

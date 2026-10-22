@@ -15,3 +15,15 @@ class Entity(ABC):
         """
         self.x = x
         self.y = y
+    @abstractmethod
+    def update(self,grid, parameters)->None:
+        """
+        update the entity place and actions
+        Args:
+            grid:
+            parameters: list of paramenters
+
+        Returns:
+        nothing as we update the board
+        """
+        pass

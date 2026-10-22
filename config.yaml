@@ -7,7 +7,8 @@ parameters:
   R_PREDATOR_SIGHT: 3
   T_COOLDOWN: 5
   PLANT_SPAWN_EVERY: 1
-
+  T_APEX_PREDATOR: 8
+  R_APEX_PREDATOR_SIGHT: 4
 grid:
   type: Grid
   width: 30
@@ -1797,3 +1798,9 @@ entities:
   - type: Herb
     x: 20
     y: 20
+  - type: ApexPredator
+    x: 7
+    y: 16
+  - type: ApexPredator
+    x: 24
+    y: 21
