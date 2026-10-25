@@ -10,6 +10,7 @@ from grid import Grid as Grid
 from entities.block import Rock as Rock, Tree as Tree
 from entities.apexpredator import ApexPredator
 
+
 def print_world(world, turn) -> None:  # Chatgpt func fully
     """
     just print the world
@@ -20,7 +21,14 @@ def print_world(world, turn) -> None:  # Chatgpt func fully
     Returns:
 
     """
-    symbols = {Plant: "P", Herb: "H", Pred: "D", Rock: "R", Tree: "T", ApexPredator: "A"}
+    symbols = {
+        Plant: "P",
+        Herb: "H",
+        Pred: "D",
+        Rock: "R",
+        Tree: "T",
+        ApexPredator: "A",
+    }
     print(f"\nTurn {turn} (P=plant, H=herbivore, D=predator, R=rock, T=tree):")
     for row in world.grid:
         print(" ".join(symbols.get(type(cell), ".") for cell in row))
@@ -55,7 +63,6 @@ def run() -> None:
         "Rock": Rock,
         "Tree": Tree,
         "ApexPredator": ApexPredator,
-
     }
 
     # maps entities that need a lifetime to their yaml parameter
@@ -66,7 +73,7 @@ def run() -> None:
         "ApexPredator": "T_APEX_PREDATOR",
     }
 
-    #create the initial entities
+    # create the initial entities
     for item in config["entities"]:
         entity_type = item["type"]
         x = item["x"]
@@ -89,9 +96,7 @@ def run() -> None:
     print("Starting entities:", len(livingentities(world)))
 
     for turn in range(1, TURNS + 1):
-
         for entity in livingentities(world):
-
             if world.grid[entity.x][entity.y] is not entity:
                 continue
 

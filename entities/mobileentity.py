@@ -8,8 +8,9 @@ from .plant import Plant
 
 
 class MobileEntity(Entity):
-    foodtypes=()
+    foodtypes = ()
     passthrough = ()
+
     def __init__(self, steps, x, y, reproduce):
         """
         Args:
@@ -20,7 +21,8 @@ class MobileEntity(Entity):
         super().__init__(x, y)
         self.steps = steps
         self.canreproduce = reproduce
-    def check2reproduce(self, other)->bool:
+
+    def check2reproduce(self, other) -> bool:
         """
         will check if they are same of the same entity and make sure nothing wrong can pass and crush the func
         Args:
@@ -29,10 +31,11 @@ class MobileEntity(Entity):
         Returns: bool
 
         """
-        if(not (isinstance(other, MobileEntity))):
+        if not (isinstance(other, MobileEntity)):
             return False
-        return (type(self) == type(other) and self.canreproduce and other.canreproduce)
-    def readytoreproduce(self)->bool:
+        return type(self) == type(other) and self.canreproduce and other.canreproduce
+
+    def readytoreproduce(self) -> bool:
         """
         we check if you are even able to reproduce the animal if so check what the cooldown is
         Returns: bool
@@ -70,6 +73,7 @@ class MobileEntity(Entity):
                     return True
 
         return False
+
     def look(self, range: int, grid) -> list:
         """
         look in range for food to eat
@@ -106,8 +110,7 @@ class MobileEntity(Entity):
                 cell = grid.grid[newx][newy]
                 if cell is not None and not isinstance(cell, self.foodtypes):
                     if not (
-                        self.check2reproduce(cell)
-                        or isinstance(cell, self.passthrough)
+                        self.check2reproduce(cell) or isinstance(cell, self.passthrough)
                     ):
                         """if not 2 herbs reproduction or pred destroys plant"""
                         continue
@@ -126,7 +129,8 @@ class MobileEntity(Entity):
                 if (
                     cell is None
                     or self.check2reproduce(cell)
-                    or isinstance(cell, self.passthrough)):
+                    or isinstance(cell, self.passthrough)
+                ):
                     return [(newx, newy)]
         return None
 
@@ -200,8 +204,9 @@ class Herb(MobileEntity):
     passthrough = ()
     sightkey = "R_HERBIVORE_SIGHT"
     lifetimekey = "T_HERBIVORE"
+
     def __init__(self, steps, x, y):
-        super().__init__(steps, x, y,reproduce=True)
+        super().__init__(steps, x, y, reproduce=True)
         self.cooldown = 0
 
     def update(self, grid, parameters) -> None:
@@ -219,10 +224,12 @@ class Herb(MobileEntity):
 
         super().update(grid, parameters)
 
+
 class Pred(MobileEntity):
     foodtypes = (Herb,)
     passthrough = (Plant,)
     sightkey = "R_PREDATOR_SIGHT"
     lifetimekey = "T_PREDATOR"
+
     def __init__(self, steps, x, y):
-        super().__init__(steps, x, y,reproduce=False)
+        super().__init__(steps, x, y, reproduce=False)

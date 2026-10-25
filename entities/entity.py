@@ -15,8 +15,9 @@ class Entity(ABC):
         """
         self.x = x
         self.y = y
+
     @abstractmethod
-    def update(self,grid, parameters)->None:
+    def update(self, grid, parameters) -> None:
         """
         update the entity place and actions
         Args:

@@ -29,7 +29,7 @@ class Plant(Entity):
                     grid.addentity(newPlant)
                 i += 1
 
-    def update(self, grid,parameters)->None:
+    def update(self, grid, parameters) -> None:
         self.steps -= 1
         if self.steps <= 0:
             grid.remove(self)
