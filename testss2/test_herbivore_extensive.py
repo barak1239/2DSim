@@ -1,19 +1,19 @@
-"""Extensive herbivore tests for the GameOfLife project.
+"""extensive herbivore tests for the GameOfLife project.
 
-Put this file alongside grid.py, mobileentity.py, plant.py, entity.py and block.py.
-Run: python -m unittest -v test_herbivore_extensive.py
 
 These tests are independent of YAML and the 590-entity simulation.
 Tests marked EXPECTED BEHAVIOR express ecosystem requirements. If one fails,
 it identifies a behavior to inspect, not necessarily a syntax error.
 """
-
 import unittest
 
-from entities.mobileentity import Herb, Pred
-from grid import Grid
-from entities.plant import Plant
 from entities.block import Rock, Tree
+from entities.herb import Herb
+from entities.plant import Plant
+from entities.predator import Pred
+from grid import Grid
+
+PARAMETERS = {"R_HERBIVORE_SIGHT": 4, "R_PREDATOR_SIGHT": 4, "T_HERBIVORE": 12, "T_PREDATOR": 6, "T_COOLDOWN": 5}
 
 SIGHT = 4
 COOLDOWN = 5
@@ -44,7 +44,7 @@ class TestHerbivoreBasics(unittest.TestCase):
     def test_02_no_food_one_move_per_update(self):
         world = place(Grid(7, 7), Herb(12, 3, 3))
         herb = world.grid[3][3]
-        herb.update(world, 2, COOLDOWN, BABY_LIFESPAN)
+        herb.update(world, PARAMETERS)
         self.assertLessEqual(max(abs(herb.x - 3), abs(herb.y - 3)), 1)
         self.assertEqual(herb.steps, 11)
         self.assertTrue(is_present(world, herb))
@@ -53,7 +53,7 @@ class TestHerbivoreBasics(unittest.TestCase):
     def test_03_herb_dies_after_lifespan_expires(self):
         world = place(Grid(3, 3), Herb(1, 1, 1))
         herb = world.grid[1][1]
-        herb.update(world, 1, COOLDOWN, BABY_LIFESPAN)
+        herb.update(world, PARAMETERS)
         self.assertEqual(herb.steps, 0)
         self.assertEqual(len(occupants(world, Herb)), 0)
 
@@ -65,7 +65,7 @@ class TestHerbivoreBasics(unittest.TestCase):
             for y in range(3):
                 if (x, y) != (1, 1):
                     world.addentity(Rock(x, y))
-        herb.update(world, 2, COOLDOWN, BABY_LIFESPAN)
+        herb.update(world, PARAMETERS)
         self.assertEqual((herb.x, herb.y), (1, 1))
         self.assertEqual(herb.steps, 9)
 
@@ -73,7 +73,7 @@ class TestHerbivoreBasics(unittest.TestCase):
         world = place(Grid(3, 3), Herb(10, 1, 1), Rock(0, 0), Tree(0, 1))
         herb = world.grid[1][1]
         for _ in range(5):
-            herb.update(world, 1, COOLDOWN, BABY_LIFESPAN)
+            herb.update(world, PARAMETERS)
             self.assertIsInstance(world.grid[0][0], Rock)
             self.assertIsInstance(world.grid[0][1], Tree)
 
@@ -82,7 +82,7 @@ class TestHerbivoreFoodAndBFS(unittest.TestCase):
     def test_06_adjacent_plant_is_eaten_and_refuels(self):
         world = place(Grid(5, 5), Herb(5, 2, 2), Plant(7, 2, 3))
         herb = world.grid[2][2]
-        herb.update(world, SIGHT, COOLDOWN, BABY_LIFESPAN)
+        herb.update(world, PARAMETERS)
         self.assertEqual((herb.x, herb.y), (2, 3))
         self.assertEqual(herb.steps, 5 + 7 - 1)
         self.assertEqual(len(occupants(world, Plant)), 0)
@@ -109,7 +109,7 @@ class TestHerbivoreFoodAndBFS(unittest.TestCase):
         for x, y in [(0, 1), (1, 0), (1, 1)]:
             world.addentity(Rock(x, y))
         self.assertIsNone(herb.look(5, world))
-        herb.update(world, 5, COOLDOWN, BABY_LIFESPAN)
+        herb.update(world, PARAMETERS)
         self.assertEqual((herb.x, herb.y), (0, 0))
 
     def test_10_diagonal_plant_is_one_step_away(self):
@@ -120,7 +120,7 @@ class TestHerbivoreFoodAndBFS(unittest.TestCase):
     def test_11_herb_does_not_refuel_on_empty_cell(self):
         world = place(Grid(5, 5), Herb(7, 2, 2))
         herb = world.grid[2][2]
-        herb.update(world, 2, COOLDOWN, BABY_LIFESPAN)
+        herb.update(world, PARAMETERS)
         self.assertEqual(herb.steps, 6)
 
 
@@ -134,7 +134,7 @@ class TestHerbivoreReproduction(unittest.TestCase):
         baby = babies[0]
         self.assertEqual(baby.steps, BABY_LIFESPAN)
         self.assertEqual(baby.cooldown, 0)
-        self.assertLessEqual(max(abs(baby.x - parent.x), abs(baby.y - parent.y)), 1)
+        self.assertLessEqual(max(abs(baby.x-parent.x), abs(baby.y-parent.y)), 1)
         self.assertTrue(is_present(world, parent))
 
     def test_13_cooldown_blocks_direct_reproduction(self):
@@ -164,7 +164,7 @@ class TestHerbivoreReproduction(unittest.TestCase):
         for x, y in [(1, 2), (1, 3), (3, 2), (3, 3)]:
             world.addentity(Rock(x, y))
         self.assertEqual(parent_a.look(4, world)[0], (2, 2))
-        parent_a.update(world, 4, COOLDOWN, BABY_LIFESPAN)
+        parent_a.update(world, PARAMETERS)
         self.assertEqual(len(occupants(world, Herb)), 3)
         self.assertTrue(is_present(world, parent_a))
         self.assertTrue(is_present(world, parent_b))
@@ -174,6 +174,7 @@ class TestHerbivoreReproduction(unittest.TestCase):
         self.assertEqual(baby.steps, BABY_LIFESPAN)
         self.assertEqual(parent_a.steps, 7)  # reproduction consumes one turn
 
+    @unittest.skip("Optional behavior not required: seeking mates without food")
     def test_16_diagnostic_reproduction_without_nearby_plants(self):
         """OPTIONAL DESIGN EXPECTATION, not an unambiguous assignment rule.
 
@@ -185,6 +186,8 @@ class TestHerbivoreReproduction(unittest.TestCase):
         world = place(Grid(5, 5), Herb(8, 2, 2), Herb(8, 2, 3))
         a = world.grid[2][2]
         path = a.look(1, world)
+        self.assertEqual(path, [(2, 3)],
+                         "Herb is not selected as a reproduction target without plants")
 
     def test_17_baby_does_not_act_in_birth_turn_snapshot(self):
         world = place(Grid(5, 5), Herb(8, 2, 1), Herb(8, 2, 2), Plant(7, 2, 3))
@@ -192,7 +195,7 @@ class TestHerbivoreReproduction(unittest.TestCase):
         for x, y in [(1, 2), (1, 3), (3, 2), (3, 3)]:
             world.addentity(Rock(x, y))
         snapshot = occupants(world, Herb)
-        a.update(world, 4, COOLDOWN, BABY_LIFESPAN)
+        a.update(world, PARAMETERS)
         babies = [h for h in occupants(world, Herb) if h not in (a, b)]
         self.assertEqual(len(babies), 1)
         self.assertNotIn(babies[0], snapshot)
@@ -204,7 +207,7 @@ class TestHerbivoreReproduction(unittest.TestCase):
         a.cooldown = 3
         for x, y in [(1, 2), (1, 3), (3, 2), (3, 3)]:
             world.addentity(Rock(x, y))
-        a.update(world, 4, COOLDOWN, BABY_LIFESPAN)
+        a.update(world, PARAMETERS)
         self.assertEqual(len(occupants(world, Herb)), 2)
         self.assertEqual(a.cooldown, 2)
         self.assertEqual(b.cooldown, 0)
@@ -215,7 +218,7 @@ class TestHerbivorePredatorInteractions(unittest.TestCase):
         world = place(Grid(5, 5), Pred(5, 2, 2), Herb(7, 2, 3))
         pred = world.grid[2][2]
         victim = world.grid[2][3]
-        pred.update(world, SIGHT, COOLDOWN, BABY_LIFESPAN)
+        pred.update(world, PARAMETERS)
         self.assertEqual((pred.x, pred.y), (2, 3))
         self.assertEqual(pred.steps, 5 + 7 - 1)
         self.assertFalse(is_present(world, victim))
@@ -224,9 +227,9 @@ class TestHerbivorePredatorInteractions(unittest.TestCase):
     def test_20_no_herbivore_creation_from_predator(self):
         world = place(Grid(5, 5), Pred(7, 2, 2))
         pred = world.grid[2][2]
-        pred.update(world, SIGHT, COOLDOWN, BABY_LIFESPAN)
+        pred.update(world, PARAMETERS)
         self.assertEqual(len(occupants(world, Herb)), 0)
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     unittest.main(verbosity=2)

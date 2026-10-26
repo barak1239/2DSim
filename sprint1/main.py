@@ -2,9 +2,10 @@ import matplotlib
 
 matplotlib.use("TkAgg")
 
-from sprint1 import gol_basic_simulation as gl
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
+
+from sprint1 import gol_basic_simulation as gl
 
 
 def main():

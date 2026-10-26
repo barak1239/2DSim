@@ -1,20 +1,19 @@
-"""Small reproduction test for the ecosystem classes; no YAML needed. test created by chatgpt"""
-
+"""Small reproduction test for the ecosystem classes; no YAML needed."""
 import random as rnd
 
+PARAMETERS = {"R_HERBIVORE_SIGHT": 4, "R_PREDATOR_SIGHT": 4, "T_HERBIVORE": 12, "T_PREDATOR": 6, "T_COOLDOWN": 5}
+
+
 # Change this import if your classes are saved in another Python file.
-from entities.entity import Grid, Herb, Plant
+from entities.herb import Herb
+from entities.plant import Plant
+from grid import Grid
 
 
 def print_world(world):
     symbols = {Herb: "H", Plant: "P"}
     for row in world.grid:
-        print(
-            " ".join(
-                symbols.get(type(cell), ".") if cell is not None else "."
-                for cell in row
-            )
-        )
+        print(" ".join(symbols.get(type(cell), ".") if cell is not None else "." for cell in row))
     print()
 
 
@@ -39,7 +38,7 @@ def main():
 
     # BFS should attempt to enter (3, 2), which contains the other herbivore.
     # Reproduction should create a baby instead of moving into that cell.
-    moving_herb.update(world, 3, 5, T_HERBIVORE=3)
+    moving_herb.update(world, PARAMETERS)
 
     print("After one turn:")
     print_world(world)

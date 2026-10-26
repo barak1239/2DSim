@@ -7,8 +7,18 @@ class Grid:
                                none none none
                                none none none"""
 
-    def addentity(self, entity):
-        self.grid[entity.x][entity.y] = entity
+        self.eventmanager = None
+
+    def addentity(self, entity: object) -> None:
+        x, y = entity.x, entity.y
+
+        if not (0 <= x < self.height and 0 <= y < self.width):
+            raise ValueError(f"Invalid entity position: ({x}, {y})")
+
+        if self.grid[x][y] is not None:
+            raise ValueError(f"Cell ({x}, {y}) is already occupied")
+
+        self.grid[x][y] = entity
 
     def remove(self, entity):
         self.grid[entity.x][entity.y] = None

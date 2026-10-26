@@ -1,69 +1,48 @@
-"""Test herbivore reproduction cooldown without YAML.
+"""check cooldown and reproduction using the Sprint 3 method signatures."""
+from unittest.mock import patch
 
-Place this file beside the module containing Grid, Herb and Plant.
-"""
-
-import random as rnd
-
-# Change the module name if your classes are saved elsewhere.
-from entities.entity import Grid, Herb, Plant
-
+from entities.herb import Herb
+from grid import Grid
 
 T_COOLDOWN = 5
-SIGHT_RANGE = 0  # During cooldown checks, updates just age and wander randomly.
+BABY_LIFESPAN = 12
+PARAMETERS = {"R_HERBIVORE_SIGHT": 0, "R_PREDATOR_SIGHT": 3,
+              "T_HERBIVORE": BABY_LIFESPAN, "T_PREDATOR": 6,
+              "T_COOLDOWN": T_COOLDOWN}
 
 
 def count_herbivores(world):
     return sum(isinstance(cell, Herb) for row in world.grid for cell in row)
 
 
-def main():
-    rnd.seed(7)
+def test_cooldown():
     world = Grid(7, 7)
+    first, second = Herb(30, 2, 2), Herb(30, 3, 2)
+    world.addentity(first)
+    world.addentity(second)
 
-    first = Herb(30, 2, 2)
-    second = Herb(30, 3, 2)
-    plant = Plant(30, 4, 2)
-    for entity in (first, second, plant):
-        world.addentity(entity)
-
-    # The first parent tries to reach the plant through the second parent.
-    first.update(world, 3, T_COOLDOWN, T_HERBIVORE=3)
-    assert count_herbivores(world) == 3, "Expected one baby after the first encounter"
-    assert (first.cooldown, second.cooldown) == (5, 5), "Both parents need cooldown 5"
-    print("Initial reproduction: PASS (3 herbivores, both cooldowns = 5)")
+    # Trigger a deliberate encounter; no reliance on random BFS choices.
+    first.move([(3, 2)], world, T_COOLDOWN, BABY_LIFESPAN)
+    assert count_herbivores(world) == 3
+    assert (first.cooldown, second.cooldown) == (5, 5)
 
     for turn in range(1, T_COOLDOWN + 1):
-        # Deliberately try to enter the other parent's cell BEFORE ticking cooldown.
-        # A blocked encounter may cause the first parent to wander to a free cell.
-        first.move([(second.x, second.y)], world, T_COOLDOWN, T_HERBIVORE=3)
-        assert count_herbivores(world) == 3, (
-            f"Unexpected baby during cooldown on turn {turn}"
-        )
-        assert world.grid[second.x][second.y] is second, "Second parent was overwritten"
-
-        # These updates count down each parent's cooldown, even if it cannot move.
-        first.update(world, SIGHT_RANGE, T_COOLDOWN, T_HERBIVORE=3)
-        second.update(world, SIGHT_RANGE, T_COOLDOWN, T_HERBIVORE=3)
-        assert count_herbivores(world) == 3, f"Unexpected baby on turn {turn}"
+        # Still on cooldown before the turn begins.
+        first.move([(second.x, second.y)], world, T_COOLDOWN, BABY_LIFESPAN)
+        assert count_herbivores(world) == 3
+        # Keep both stationary; test cooldown, not random wandering.
+        with patch.object(first, "look", return_value=None), patch.object(second, "look", return_value=None):
+            first.update(world, PARAMETERS)
+            second.update(world, PARAMETERS)
         expected = T_COOLDOWN - turn
-        assert first.cooldown == expected and second.cooldown == expected, (
-            f"Turn {turn}: expected cooldowns {expected}, "
-            f"got {first.cooldown} and {second.cooldown}"
-        )
-        print(
-            f"Cooldown turn {turn}: PASS (cooldowns = {first.cooldown}, {second.cooldown}; 3 herbivores)"
-        )
+        assert (first.cooldown, second.cooldown) == (expected, expected)
+        print(f"Cooldown turn {turn}: PASS")
 
-    # Both cooldowns have reached zero: meeting again should create one more baby.
-    first.move([(second.x, second.y)], world, T_COOLDOWN, T_HERBIVORE=3)
-    assert count_herbivores(world) == 4, "Expected a new baby after cooldown finished"
-    assert first.cooldown == T_COOLDOWN and second.cooldown == T_COOLDOWN, (
-        "Both parents should restart their cooldown after reproduction"
-    )
-    print("Reproduction after cooldown: PASS (4 herbivores, cooldowns reset to 5)")
-    print("ALL COOLDOWN TESTS PASSED")
+    first.move([(second.x, second.y)], world, T_COOLDOWN, BABY_LIFESPAN)
+    assert count_herbivores(world) == 4
+    assert (first.cooldown, second.cooldown) == (5, 5)
+    print("PASS: Reproduction works again when cooldown reaches zero")
 
 
 if __name__ == "__main__":
-    main()
+    test_cooldown()

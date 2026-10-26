@@ -1,10 +1,10 @@
-import random as rnd
 import collections
+import random as rnd
+
 import consts
-from matplotlib import path
-from .entity import Entity
+
 from .block import Block
-from .plant import Plant
+from .entity import Entity
 
 
 class MobileEntity(Entity):
@@ -74,11 +74,11 @@ class MobileEntity(Entity):
 
         return False
 
-    def look(self, range: int, grid) -> list:
+    def look(self, sightrange: int, grid: object) -> list | None:
         """
         look in range for food to eat
         Args:
-            range: int for max range an animal can look at
+            sightrange: int for max range an animal can look at
             grid:
 
         Returns:
@@ -98,7 +98,7 @@ class MobileEntity(Entity):
                     x, y = parent[(x, y)]
                 path.reverse()
                 return path
-            if dist >= range:
+            if dist >= sightrange:
                 continue
             for dx, dy in directions:
                 newx = x + dx
@@ -134,12 +134,13 @@ class MobileEntity(Entity):
                     return [(newx, newy)]
         return None
 
-    def move(self, path, grid, T_cooldown, newbornsteps) -> None:
+    def move(self, path: object, grid: object, T_cooldown: object, newbornsteps: object) -> None:
         """
         the actual movement of the animal
         Args:
-            path:
-            grid:
+            path: coordinates of the path to follow, or None
+            if no valid path was found.
+            grid: the simulation grid containing all entities.
             T_cooldown: const in yaml
             newbornsteps: const in yaml
 
@@ -170,20 +171,39 @@ class MobileEntity(Entity):
                         return
             return  # no empty cell found
         # normal movement and eating
-        if isinstance(other, self.foodtypes):
-            self.steps += other.steps
+        if other is not None:
+            if isinstance(other, self.foodtypes):
+                self.steps += other.steps
+
+                if grid.eventmanager is not None:
+                    grid.eventmanager.notifyObservers({
+                        "type": "entity_eaten",
+                        "eater": self,
+                        "prey": other
+                    })
+
+            elif not isinstance(other, self.passthrough):
+                raise ValueError(
+                    f"Cannot move onto {type(other).__name__} "
+                    f"at ({newx}, {newy})"
+                )
+
+            # Remove the eaten or destroyed entity before moving
+            grid.remove(other)
+
+        # Move to the destination
         grid.remove(self)
         self.x, self.y = newx, newy
         grid.addentity(self)
 
-    def update(self, grid, parameters) -> None:
+    def update(self, grid: object, parameters: object) -> None:
         """
         handles removing and adjusting entity lives (steps)
         Args:
             grid:
-            range:
-            T_cooldown:
-            newbornsteps:
+            parameters: dictionary of simulation settings loaded from
+            config.yaml, including sight range, reproduction cooldown,
+            and the initial lifetime of newborn entities.
 
         Returns: none
         """
@@ -197,39 +217,3 @@ class MobileEntity(Entity):
         self.steps -= 1
         if self.steps <= 0:
             grid.remove(self)
-
-
-class Herb(MobileEntity):
-    foodtypes = (Plant,)
-    passthrough = ()
-    sightkey = "R_HERBIVORE_SIGHT"
-    lifetimekey = "T_HERBIVORE"
-
-    def __init__(self, steps, x, y):
-        super().__init__(steps, x, y, reproduce=True)
-        self.cooldown = 0
-
-    def update(self, grid, parameters) -> None:
-        """
-        handles removing and adjusting entity lives (steps)
-        Args:
-            grid:
-            parameters:
-
-        Returns: none
-
-        """
-        if self.cooldown > 0:
-            self.cooldown -= 1
-
-        super().update(grid, parameters)
-
-
-class Pred(MobileEntity):
-    foodtypes = (Herb,)
-    passthrough = (Plant,)
-    sightkey = "R_PREDATOR_SIGHT"
-    lifetimekey = "T_PREDATOR"
-
-    def __init__(self, steps, x, y):
-        super().__init__(steps, x, y, reproduce=False)

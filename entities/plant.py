@@ -1,5 +1,8 @@
-from .entity import Entity
 import random as rnd
+
+import consts
+
+from .entity import Entity
 
 
 class Plant(Entity):
@@ -7,27 +10,25 @@ class Plant(Entity):
         super().__init__(x, y)
         self.steps = steps
 
-    def spawn(self, grid) -> None:
+    def spawn(self, grid: object, plantsteps: int) -> None:
         """
-        creates new plant with steps from the plant he came from. return nothing but updates the grid
+        creates up to 10 new plants. return nothing but updates the grid
         Args:
-            grid:
+            grid: the simulation grid containing all entities.
 
-        Returns:
+        Returns: nothing, just updates the grid with a new plantt
 
         """
-        for _ in range(10):
-            spawned = False
-            i = 0
-            while not spawned and i < 900:
-                newx = rnd.randint(0, grid.height - 1)
-                newy = rnd.randint(0, grid.width - 1)
-                if grid.grid[newx][newy] is None:
-                    spawned = True
-                    newsteps = self.steps
-                    newPlant = type(self)(newsteps, newx, newy)
-                    grid.addentity(newPlant)
-                i += 1
+        empty_cells = [
+            (x, y)
+            for x in range(grid.height)
+            for y in range(grid.width)
+            if grid.grid[x][y] is None
+        ]
+        spawn_count = min(consts.PLANTS_PER_SPAWN, len(empty_cells))
+        for x, y in rnd.sample(empty_cells, spawn_count):
+            newplant = Plant(plantsteps, x, y)
+            grid.addentity(newplant)
 
     def update(self, grid, parameters) -> None:
         self.steps -= 1
