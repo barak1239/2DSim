@@ -156,6 +156,14 @@ class MobileEntity(Entity):
                 if self.reproduce(grid, newbornsteps):
                     self.cooldown = T_cooldown
                     other.cooldown = T_cooldown
+
+                    if grid.eventmanager is not None:
+                        grid.eventmanager.notifyObservers({
+                            "type": "entity_reproduced",
+                            "turn": grid.currturn,
+                            "position": (self.x, self.y),
+                        })
+
                     return
             # no reproduction isn't possible= try another direction
             directions = consts.DIRECTIONS.copy()
@@ -179,7 +187,8 @@ class MobileEntity(Entity):
                     grid.eventmanager.notifyObservers({
                         "type": "entity_eaten",
                         "eater": self,
-                        "prey": other
+                        "prey": other,
+                        "turn": grid.currturn
                     })
 
             elif not isinstance(other, self.passthrough):

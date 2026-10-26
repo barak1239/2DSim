@@ -8,6 +8,7 @@ class Grid:
                                none none none"""
 
         self.eventmanager = None
+        self.currturn = 0
 
     def addentity(self, entity: object) -> None:
         x, y = entity.x, entity.y

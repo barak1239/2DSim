@@ -15,7 +15,7 @@ from entities.herb import Herb as Herb
 from entities.plant import Plant
 from entities.predator import Pred as Pred
 from grid import Grid as Grid
-
+from alerts.statsalert import StatisticalAlert
 
 def print_world(world: Grid, turn: object) -> None:  # Chatgpt func fully
     """
@@ -218,10 +218,18 @@ def run() -> None:
     eventmanager.addObserver(eatingalert)
     plantalert = PlantAlert(world)
     eventmanager.addObserver(plantalert)
+    statisticalalert = StatisticalAlert()
+    eventmanager.addObserver(statisticalalert)
+    eventmanager.notifyObservers({
+        "type": "turn_finished",
+        "turn": 0,
+        "entities": livingentities(world),
+    })
     print_world(world, 0)
     print("Starting entities:", len(livingentities(world)))
 
     for turn in range(1, TURNS + 1):
+        world.currturn = turn
         for entity in livingentities(world):
             if world.grid[entity.x][entity.y] is not entity:
                 continue
@@ -233,10 +241,14 @@ def run() -> None:
             Plant(T_PLANT, 0, 0).spawn(world,T_PLANT)
         eventmanager.notifyObservers({
             "type": "turn_finished",
+            "turn": turn,
             "entities": livingentities(world)
         })
         print_world(world, turn)
+        outputdir = Path(__file__).resolve().parent / "results"
+        statisticalalert.save_results(outputdir)
 
+        print(f"Statistics saved to: {outputdir}")
 
 if __name__ == "__main__":
     run()

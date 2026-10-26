@@ -1,5 +1,5 @@
 parameters:
-  TURNS: 200
+  TURNS: 30
   T_PLANT: 16
   T_HERBIVORE: 12
   T_PREDATOR: 6
